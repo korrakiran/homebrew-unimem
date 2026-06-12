@@ -1,4 +1,4 @@
-# Homebrew Formula for Unimem CLI tool
+# Homebrew Formula for Unimem CLI tool (retagged v0.5.0)
 # To release:
 # 1. Tag and release Unimem on GitHub (e.g. v0.1.0).
 # 2. Get the tarball URL and calculate its SHA256 using: curl -sL <url> | shasum -a 256
