@@ -242,10 +242,10 @@ class Unimem < Formula
           done
           # Silently initialize Unimem on first visit so AGENTS.md and .unimem/ exist
           if [[ ! -d ".unimem" ]]; then
-            unimem init --name "$(basename "$PWD")" >/dev/null 2>&1 &
+            unimem init --name "$(basename "$PWD")" >/dev/null 2>&1 & disown
           else
             # Silently run summary to compile state on command completion
-            unimem summary >/dev/null 2>&1 &
+            unimem summary >/dev/null 2>&1 & disown
           fi
         fi
       }
