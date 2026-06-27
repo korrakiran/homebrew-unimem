@@ -1,21 +1,20 @@
 # Homebrew Formula for Unimem CLI tool
 # To release:
-# 1. Tag and release Unimem on GitHub (e.g. v0.1.0).
+# 1. Tag and release Unimem on GitHub (e.g. v2.0.0).
 # 2. Get the tarball URL and calculate its SHA256 using: curl -sL <url> | shasum -a 256
 # 3. Update the url and sha256 fields below.
-# 4. Copy this file into your tap repository (e.g., github.com/korrakiran/homebrew-unimem/Formula/unimem.rb).
-# 5. Peace
-# 6. Happy coding!!
+# 4. Peace
+# 5. Happy coding!!
 
 class Unimem < Formula
   include Language::Python::Virtualenv
 
   desc "Universal Project Memory Layer for AI Coding Agents"
-  homepage "https://github.com/korrakiran/unimem"
-  url "https://github.com/korrakiran/unimem/archive/refs/tags/v0.5.2.tar.gz"
-  sha256 "c57a4057c52e1de49d96934c36b4099ef0d69d87a5a7364df6a1d72fc0c47a2e"
+  homepage "https://github.com/korrakiran/Unimem"
+  url "https://github.com/korrakiran/Unimem/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "2c3d9bb758c90a47778495393499efe3d3950bae0611f4a5aac44038539fb365"
   license "MIT"
-  head "https://github.com/korrakiran/unimem.git", branch: "main"
+  head "https://github.com/korrakiran/Unimem.git", branch: "main"
 
   depends_on "python@3.12"
 
@@ -59,7 +58,7 @@ class Unimem < Formula
     sha256 "c40756b57adaa8b1efeeced5c196f3f3b7c435f90e84ea7f443901bec8099ef6"
   end
 
-  resource "pydantic_core" do
+  resource "pydantic-core" do
     url "https://files.pythonhosted.org/packages/19/95/6195171e385007300f0f5574592e467c568becce2d937a0b6804f218bc49/pydantic_core-2.46.4-cp312-cp312-macosx_11_0_arm64.whl"
     sha256 "962ccbab7b642487b1d8b7df90ef677e03134cf1fd8880bf698649b22a69371f"
   end
@@ -99,7 +98,7 @@ class Unimem < Formula
     sha256 "ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464"
   end
 
-  resource "typing_extensions" do
+  resource "typing-extensions" do
     url "https://files.pythonhosted.org/packages/72/94/1a15dd82efb362ac84269196e94cf00f187f7ed21c242792a923cdb1c61f/typing_extensions-4.15.0.tar.gz"
     sha256 "0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"
   end
@@ -109,164 +108,26 @@ class Unimem < Formula
     sha256 "9ddf7c82fda3ae8e24decda1338ede66e1c99883db93711d8fb941eaa2d8c282"
   end
 
-
   def install
     venv = virtualenv_create(libexec, "python3.12")
-    
+
     # Symlink the cached wheel to a valid wheel filename format so pip accepts it
     valid_wheel = buildpath/"pydantic_core-2.46.4-cp312-cp312-macosx_11_0_arm64.whl"
-    ln_s resource("pydantic_core").cached_download, valid_wheel
+    ln_s resource("pydantic-core").cached_download, valid_wheel
 
-    # Install pydantic_core from the symlinked wheel file to avoid Maturin build dependency
-    system Formula["python@3.12"].opt_bin/"python3.12", "-m", "pip", "--python", libexec/"bin/python", "install", "--no-deps", valid_wheel
-    
+    system formula_opt_bin("python@3.12")/"python3.12", "-m", "pip", "--python",
+           libexec/"bin/python", "install", "--no-deps", valid_wheel
+
     resources.each do |r|
-      next if r.name == "pydantic_core"
+      next if r.name == "pydantic-core"
+
       venv.pip_install r
     end
-    
+
     venv.pip_install_and_link buildpath
   end
 
-  def post_install
-    home_dir = Dir.home
-    rules_content = <<~EOS
-      # Unimem Agent Instructions
-
-      Unimem is active in this project. You are resuming work from a previous session.
-      
-      CRITICAL STARTUP RULE:
-      Do NOT scan, list, or search the entire project repository or folder tree on startup. This wastes token context and is inefficient. Instead, follow these steps immediately:
-      
-      1. Read the structured project state at `.unimem/state.json` first to get the exact roadmap, goals, tasks, and file listings.
-      2. Read the human-readable project memory at `.unimem/memory.md` next to get the narrative context, recent decisions, and details.
-      3. Trust `.unimem/state.json` and `.unimem/memory.md` as the absolute sources of truth for the project state. Do NOT attempt to reconstruct them or scan the repository first.
-      
-      CRITICAL WORKFLOW RULES:
-      
-      - You MUST update `.unimem/state.json` immediately after EVERY individual file is created, modified, or deleted. Do NOT batch file changes — each file operation must be recorded in the `file_history` of `state.json` immediately. This ensures crash recovery and context preservation.
-      
-      - Do NOT update `memory.md` after every file change. Instead, run `unimem summary` at strategic checkpoints (see UNIMEM UPDATE GUIDELINES below).
-      
-      - When you finish or pause work, always update `.unimem/state.json` first to document completed features, goals, or tasks, then run `unimem summary` to synchronize changes into `memory.md` and keep the supporting `.unimem/` logs aligned.
-      
-      - When you complete the current task, run: unimem task done --next "describe the next task"
-      
-      - If you are interrupted or about to stop, always run: unimem task done --next "describe next task" before exiting so context is preserved for the next agent.
-      
-      UNIMEM UPDATE GUIDELINES:
-      Run `unimem summary` at checkpoint moments to prevent mid-process context loss:
-      
-      ALWAYS run `unimem summary` at:
-      - Major milestones (feature/module completion, architectural decisions)
-      - Every 45 minutes of continuous work (safety checkpoint)
-      - Before stopping or pausing work
-      - At the end of the work session
-      - After completing a significant refactor or bug fix
-      
-      DO NOT run `unimem summary` for:
-      - CSS or styling tweaks (unless part of a major UI overhaul)
-      - Code formatting or comments
-      - Typo fixes
-      - Simple variable renames
-      - Dependency version bumps
-      - Whitespace changes
-      
-      For minor changes: Make the change, build/test, update state.json, but skip `unimem summary` unless approaching a checkpoint time or milestone.
-      
-      CRASH RECOVERY:
-      If an agent crashes mid-work:
-      1. The next agent reads `.unimem/state.json` and its `file_history` to see exactly what was created/modified
-      2. The next agent reads `.unimem/memory.md` for the last completed milestone
-      3. The next agent reconstructs only the in-progress work since the last checkpoint, not the entire project
-      
-      CRITICAL GIT RULE:
-      - Do NOT stage, commit, or push the `.unimem` directory or any files inside it (such as `.unimem/state.json` or `.unimem/memory.md`). They are local-only project memory.
-      - Do NOT stage, commit, or push any temporary files, logs, or screenshots (especially those in `/var/folders/`, `/tmp/`, or similar temp folders).
-      - Do NOT stage, commit, or push any of the auto-generated agent rules or instruction files (such as `AGENTS.md`, `.cursorrules`, `.aiderules`, `.aider.instructions.md`, etc.). These are local configurations and must remain untracked.
-
-    EOS
-
-    begin
-      rule_files = [
-        ".cursorrules",
-        ".clauderules",
-        ".windsurfrules",
-        ".clinerules",
-        ".antigravityrules",
-        ".geminirules",
-        ".aiderules",
-        ".aider.instructions.md",
-        ".supermavenrules",
-        ".codeiumrules",
-        ".continuerules",
-        ".doublerules",
-        ".tabninerules",
-        ".phindrules"
-      ]
-      rule_files.each do |f|
-        File.write(File.join(home_dir, f), rules_content)
-      end
-      ohai "Successfully configured global agent rules for Cursor, Claude Code, Windsurf, Cline, Aider, Gemini, Supermaven, Codeium, Continue, Double, Tabnine, and Phind"
-    rescue => e
-      opoo "Could not write global agent rules: #{e.message}"
-    end
-
-    # Configure auto-injector hook in ~/.zshrc if not present
-    zshrc_path = File.join(home_dir, ".zshrc")
-    hook_code = <<~EOS
-
-      # Unimem Auto-Rule Injector & Init
-      unimem_inject_rules() {
-        if [[ "$PWD" != "$HOME" && "$PWD" == "$HOME/"* ]]; then
-          local rule_files=(
-            ".cursorrules"
-            ".clauderules"
-            ".windsurfrules"
-            ".clinerules"
-            ".antigravityrules"
-            ".geminirules"
-            ".aiderules"
-            ".aider.instructions.md"
-            ".supermavenrules"
-            ".codeiumrules"
-            ".continuerules"
-            ".doublerules"
-            ".tabninerules"
-            ".phindrules"
-          )
-          for f in "${rule_files[@]}"; do
-            if [[ ! -f "$f" && -f "$HOME/$f" ]]; then
-              cp "$HOME/$f" "$f" 2>/dev/null
-            fi
-          done
-          # Silently initialize Unimem on first visit so AGENTS.md and .unimem/ exist
-          if [[ ! -d ".unimem" ]]; then
-            unimem init --name "$(basename "$PWD")" >/dev/null 2>&1 &
-          else
-            # Silently run summary to compile state on command completion
-            unimem summary >/dev/null 2>&1 &
-          fi
-        fi
-      }
-      autoload -U add-zsh-hook
-      add-zsh-hook chpwd unimem_inject_rules
-      add-zsh-hook precmd unimem_inject_rules
-      unimem_inject_rules
-    EOS
-
-    if File.exist?(zshrc_path) && !File.read(zshrc_path).include?("unimem_inject_rules")
-      begin
-        File.open(zshrc_path, "a") { |f| f.write(hook_code) }
-        ohai "Successfully configured auto-rule injector hook in ~/.zshrc"
-      rescue => e
-        opoo "Could not configure auto-rule injector hook: #{e.message}"
-      end
-    end
-  end
-
   test do
-    # Check if CLI displays version correctly
     assert_match "version", shell_output("#{bin}/unimem --version")
   end
 end
